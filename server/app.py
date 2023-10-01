@@ -18,14 +18,41 @@ db.init_app(app)
 
 api = Api(app)
 
+class UserLogin(Resource):
+    
+    # login method
+    def post(self):
+        data = request.get_json()
+        user = User.query.filter(User.username == data['username']).first()
+        session['user_id'] = user.id
+        response = make_response(
+            user.to_dict(),
+            200
+        )
+        return response
+    
+
 class ClearSession(Resource):
 
+    # logout
     def delete(self):
     
         session['page_views'] = None
         session['user_id'] = None
 
-        return {}, 204
+        return {'message': 'No Content'}, 204
+    
+
+class CheckSession(Resource):
+
+    def get(self):
+        user = User.query.filter(User.id == session.get('user_id')).first()
+
+        if user:
+            return user.to_dict()
+        else:
+            # return {'message': '401: Not Authorized'}, 401
+            return {}, 401
 
 class IndexArticle(Resource):
     
@@ -48,9 +75,11 @@ class ShowArticle(Resource):
 
         return {'message': 'Maximum pageview limit reached'}, 401
 
-api.add_resource(ClearSession, '/clear')
+api.add_resource(ClearSession, '/logout')
 api.add_resource(IndexArticle, '/articles')
 api.add_resource(ShowArticle, '/articles/<int:id>')
+api.add_resource(UserLogin, '/login')
+api.add_resource(CheckSession, '/check_session')
 
 
 if __name__ == '__main__':
